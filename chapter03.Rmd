@@ -1,0 +1,37 @@
+---
+title: "Chapter 3"
+output: html_notebook
+---
+
+# 3.6.2 Simple Linear Regression
+
+```{r}
+library(ISLR2)
+library(tidymodels)
+```
+
+```{r}
+lm_mod <-
+  linear_reg() %>%
+  set_engine("lm")
+lm_fit <-
+  lm_mod %>%
+  fit(medv ~ lstat, data = Boston)
+
+lm_fit
+tidy(lm_fit)
+```
+
+```{r}
+conf_int_new <- predict(lm_fit, new_data = tibble(lstat = c(5, 10, 15)), type = "conf_int")
+conf_int_new
+pred_int_new <- predict(lm_fit, new_data = tibble(lstat = c(5, 10, 15)), type = "pred_int")
+pred_int_new
+```
+
+
+
+
+
+
+
