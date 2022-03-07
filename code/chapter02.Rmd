@@ -1,0 +1,69 @@
+---
+title: "Chapter 2 Exercises"
+output: html_document
+date: '2022-03-03'
+---
+
+# Exercises
+
+## Setup
+
+```{r}
+library(tidyverse)
+library(GGally)
+library(patchwork)
+data_folder <- "~/github/islr2/data/"
+```
+
+## Exercise 8
+
+### Problem (b)
+
+```{r}
+tbl <- 
+  read_csv(paste(data_folder, "College.csv", sep = "")) %>%
+  rename(Rownames = "...1")
+tbl
+```
+
+### Problem (c)
+
+```{r}
+summary(tbl)
+```
+
+```{r, fig.width=10, fig.height=10}
+ggpairs(tbl, columns = 3:10, lower = list(continuous = "smooth"))
+```
+
+```{r}
+ggplot(data = tbl) +
+  geom_boxplot(mapping = aes(x = Private, y = Outstate))
+```
+
+```{r}
+tbl <- tbl %>% mutate(Elite = if_else(Top10perc > 50, "Yes", "No"))
+tbl
+```
+
+```{r}
+ggplot(data = tbl) +
+  geom_boxplot(mapping = aes(x = Elite, y = Outstate))
+```
+
+```{r, fig.width=10, fig.height=10}
+plots <- list()
+for (i in 3:18) {
+  var <- sym(colnames(tbl)[i])
+  plots[[paste("column", i)]] <- ggplot(tbl) +
+    geom_histogram(aes(!!var)) +
+    labs(y = NULL)
+}
+wrap_plots(plots)
+```
+
+## Exercise 9
+
+
+
+
