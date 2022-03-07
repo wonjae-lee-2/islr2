@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.18.0
+# v0.18.1
 
 using Markdown
 using InteractiveUtils
@@ -49,29 +49,34 @@ describe(select(college, names(college, AbstractString)))
 # ╔═╡ 29fcb5d6-7f16-44a9-b1e0-e84e1ee6c4ae
 @df college corrplot(cols(3:10), size = (1500, 1500), fc = :inferno)
 
-# ╔═╡ 8306b678-3796-4e1f-87de-e08fea0c0aa5
-boxplot(
-	["Yes" "No"],
-	[college[college[:, :Private] .== x, :Outstate] for x in ["Yes", "No"]],
-	label = ["Yes" "No"],
+# ╔═╡ 85685ef3-a8a8-4f51-b505-9fa89e4e4c14
+@df college boxplot(
+	:Private,
+	:Outstate,
 	xlabel = "Private",
-	ylabel = "Outstate"
-)
+	ylabel = "Outstate",
+	legend = false)
 
 # ╔═╡ aa745c7e-fd81-47aa-b4ff-9b9ad20d5b98
 transform!(college, :"Top10perc" => ByRow(x -> ifelse(x > 50, "Yes", "No")) => :Elite)
 
 # ╔═╡ 1f26f5a6-5029-4f4c-8e10-118ffc940d40
-boxplot(
-	["Yes" "No"],
-	[college[college[:, :Elite] .== x, :Outstate] for x in ["Yes", "No"]],
-	label = ["Yes" "No"],
+@df college boxplot(
+	:Elite,
+	:Outstate,
 	xlabel = "Elite",
-	ylabel = "Outstate"
+	ylabel = "Outstate",
+	legend = false
 )
 
 # ╔═╡ 1ee6cc68-d3e4-4634-b761-fdc80afea489
-@df college histogram(cols(3:18), size = (1500, 1500), layout = (4, 4), legend = false, xlabel = reshape(names(college[:, 3:18]), 1, :))
+@df college histogram(
+	cols(3:18),
+	size = (1500, 1500),
+	layout = (4, 4),
+	legend = false,
+	xlabel = reshape(names(college[:, 3:18]), 1, :)
+)
 
 # ╔═╡ 7f3ac16a-e19d-4c35-814c-100950838327
 md"""
@@ -156,7 +161,7 @@ StatsPlots = "~0.14.33"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.7.1"
+julia_version = "1.7.2"
 manifest_format = "2.0"
 
 [[deps.AbstractFFTs]]
@@ -590,6 +595,12 @@ git-tree-sha1 = "f6250b16881adf048549549fba48b1161acdac8c"
 uuid = "c1c5ebd0-6772-5130-a774-d5fcae4a789d"
 version = "3.100.1+0"
 
+[[deps.LERC_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
+git-tree-sha1 = "bf36f528eec6634efc60d7ec062008f171071434"
+uuid = "88015f11-f218-50d7-93a8-a6af411a945d"
+version = "3.0.0+1"
+
 [[deps.LZO_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "e5b909bcf985c5e2605737d2ce278ed791b89be6"
@@ -667,10 +678,10 @@ uuid = "4b2f31a3-9ecc-558c-b454-b3730dcb73e9"
 version = "2.35.0+0"
 
 [[deps.Libtiff_jll]]
-deps = ["Artifacts", "JLLWrappers", "JpegTurbo_jll", "Libdl", "Pkg", "Zlib_jll", "Zstd_jll"]
-git-tree-sha1 = "340e257aada13f95f98ee352d316c3bed37c8ab9"
+deps = ["Artifacts", "JLLWrappers", "JpegTurbo_jll", "LERC_jll", "Libdl", "Pkg", "Zlib_jll", "Zstd_jll"]
+git-tree-sha1 = "c9551dd26e31ab17b86cbd00c2ede019c08758eb"
 uuid = "89763e89-9b03-5906-acba-b20f662cd828"
-version = "4.3.0+0"
+version = "4.3.0+1"
 
 [[deps.Libuuid_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1331,7 +1342,7 @@ version = "0.9.1+5"
 # ╠═f1c2a965-954f-441c-be76-9c8a0085f6a8
 # ╠═6a8bf73c-a75a-48bd-b4ef-9fc4269c67c5
 # ╠═29fcb5d6-7f16-44a9-b1e0-e84e1ee6c4ae
-# ╠═8306b678-3796-4e1f-87de-e08fea0c0aa5
+# ╠═85685ef3-a8a8-4f51-b505-9fa89e4e4c14
 # ╠═aa745c7e-fd81-47aa-b4ff-9b9ad20d5b98
 # ╠═1f26f5a6-5029-4f4c-8e10-118ffc940d40
 # ╠═1ee6cc68-d3e4-4634-b761-fdc80afea489
