@@ -12,6 +12,8 @@ date: '2022-03-03'
 library(tidyverse)
 library(GGally)
 library(patchwork)
+library(ISLR2)
+library(corrr)
 data_folder <- "~/github/islr2/data/"
 ```
 
@@ -52,17 +54,140 @@ ggplot(data = tbl) +
 ```
 
 ```{r, fig.width=10, fig.height=10}
-plots <- list()
-for (i in 3:18) {
-  var <- sym(colnames(tbl)[i])
-  plots[[paste("column", i)]] <- ggplot(tbl) +
-    geom_histogram(aes(!!var)) +
-    labs(y = NULL)
-}
+plots <- map(colnames(tbl)[3:18], ~ ggplot(tbl) + geom_histogram(aes(x = .data[[.]])) + labs(y = NULL))
 wrap_plots(plots)
 ```
 
 ## Exercise 9
+
+```{r}
+tblauto <- read_csv(paste(data_folder, "Auto.csv", sep = ""))
+summary(tblauto)
+```
+
+```{r}
+tblauto <-
+  tblauto %>%
+  filter(horsepower != "?") %>%
+  mutate(across(horsepower, as.numeric))
+summary(tblauto)
+```
+
+### Problem (a)
+
+```{r}
+vars_all <- names(tblauto)
+vars_all
+vars_cat <- c("origin", "name")
+vars_quant <- vars_all[!(vars_all %in% vars_cat)]
+vars_quant
+```
+
+### Problem (b)
+
+```{r}
+tblauto_quant <- tblauto %>% select(all_of(vars_quant))
+tblauto_quant
+```
+
+```{r}
+tblauto_quant %>%
+  summarize(across(everything(), ~ max(.) - min(.))) %>%
+  mutate(stat = "range", .before = everything())
+```
+
+### Problem (c)
+
+```{r}
+tblauto_quant %>%
+  summarize(across(everything(), mean)) %>%
+  mutate(stat = "mean", .before = everything())
+tblauto_quant %>%
+  summarize(across(everything(), sd)) %>%
+  mutate(stat = "sd", .before = everything())
+```
+
+### Problem (d)
+
+```{r}
+tblauto_quant_new <- tblauto_quant %>% slice(-(10:85))
+tblauto_quant_new %>%
+  summarize(across(everything(), ~ max(.) - min(.))) %>%
+  mutate(stat = "range", .before = everything())
+tblauto_quant_new %>%
+  summarize(across(everything(), mean)) %>%
+  mutate(stat = "mean", .before = everything())
+tblauto_quant_new %>%
+  summarize(across(everything(), sd)) %>%
+  mutate(stat = "sd", .before = everything())
+```
+
+```{r fig.width=10, fig.height=10}
+ggpairs(
+  tblauto_quant_new,
+  lower = list(continuous = "smooth"),
+  upper = list(continuous = "density")
+)
+```
+
+## Exercise 10
+
+### Problem (a)
+
+```{r}
+write_csv(Boston, "../data/Boston.csv")
+tblboston <- as_tibble(Boston)
+dim_desc(tblboston)
+```
+
+### Problem (b)
+
+```{r, fig.width=10, fig.height=10}
+ggpairs(tblboston, lower = list(continuous = "smooth"))
+```
+
+### Problem (c)
+
+```{r}
+correlate(tblboston) %>% select(term, crim) %>% arrange(crim)
+```
+
+### Problem (d)
+
+```{r}
+terms <- c("crim", "tax", "ptratio")
+plots <- map(terms, ~ ggplot(tblboston) + geom_boxplot(aes(y = .data[[.]])))
+wrap_plots(plots, ncol = 3)
+```
+
+### Problem (e)
+
+```{r}
+tblboston %>% filter(chas == 1) %>% tally()
+```
+
+### Problem (f)
+
+```{r}
+tblboston %>% summarize(median = median(ptratio))
+```
+
+### Problem (g)
+
+```{r}
+tblboston %>% filter(medv == min(medv))
+```
+
+```{r}
+summary(tblboston)
+```
+
+### Problem (h)
+
+```{r}
+tblboston %>% filter(rm > 7) %>% tally()
+tblboston %>% filter(rm > 8)
+```
 
 
 

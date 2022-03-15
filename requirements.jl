@@ -4,5 +4,6 @@ Pkg.add([
     "CSV",
     "Plots",
     "StatsPlots",
-    "Pluto"
+    "Pluto",
+    "Statistics"
 ])

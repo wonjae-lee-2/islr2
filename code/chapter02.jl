@@ -5,7 +5,7 @@ using Markdown
 using InteractiveUtils
 
 # ╔═╡ 2debc124-9436-11ec-366e-072108149b71
-using CSV, DataFrames, Plots, StatsPlots
+using CSV, DataFrames, Plots, StatsPlots, Statistics
 
 # ╔═╡ f8c0990c-18f7-4879-8045-1ad3926ab9f6
 md"""
@@ -142,12 +142,108 @@ md"""
 # ╔═╡ 40c9b052-27b6-4be0-b78f-5d7c2492fdb6
 @df autoqt corrplot(cols(), size = (1500, 1500), fc = :inferno)
 
+# ╔═╡ 17eba98d-b906-42ef-b536-58814860d932
+md"""
+## Exercise 10
+"""
+
+# ╔═╡ 9417a9ef-ea06-40b7-b65e-eacc46be18af
+md"""
+### Problem (a)
+"""
+
+# ╔═╡ 1a7ea974-a2ac-4497-ac9a-701af3569d6e
+dfboston = CSV.read(joinpath(data_folder, "Boston.csv"), DataFrame)
+
+# ╔═╡ da8f644c-c6b3-4e33-b4bd-156b070943f8
+size(dfboston)
+
+# ╔═╡ 9743e724-7d16-4e22-82cc-6140d84a9bb3
+md"""
+### Problem (b)
+"""
+
+# ╔═╡ 39988b11-2973-47c4-909b-36b4a86b9b07
+@df dfboston corrplot(cols(), size = (3000, 3000), fc = :inferno)
+
+# ╔═╡ 5438f74d-0dbb-48dd-ba6d-42e6b968f4ea
+md"""
+### Problem (c)
+"""
+
+# ╔═╡ bd66b2a7-1613-4d6e-a73d-374492a9f97e
+sort(
+	select(
+		insertcols!(
+			DataFrame(cor(Matrix(dfboston)), names(dfboston)),
+			1,
+			:term => names(dfboston)
+		),
+		[:term, :crim]
+	),
+	:crim
+)
+
+# ╔═╡ a9e48c79-6c4c-404c-b6bc-226791e6e468
+md"""
+### Problem (d)
+"""
+
+# ╔═╡ e1a8d28f-df59-44f4-81c4-3ba92c812456
+begin
+	terms = [:crim, :tax, :ptratio]
+	plot(
+		(boxplot(dfboston[!, x], xlabel = x) for x in terms)...,
+		legend = false,
+		layout = (1, 3)
+	)
+end
+
+# ╔═╡ 67171bd0-5c2b-4038-b1ea-29800447072f
+md"""
+### Problem (e)
+"""
+
+# ╔═╡ 35e3b511-f4b9-4b04-8a39-40232bce3841
+nrow(dfboston[dfboston[!, :chas] .== 1, :])
+
+# ╔═╡ 49783152-ad6b-409a-8329-38e4e71599d5
+md"""
+### Problem (f)
+"""
+
+# ╔═╡ b1e8d25b-6a6f-4ba2-be49-f2b27c443a99
+median(dfboston[!, :ptratio])
+
+# ╔═╡ d482828f-53fb-497e-aa74-d254517c8751
+md"""
+### Problem (g)
+"""
+
+# ╔═╡ 4995d7e4-2315-4935-9b07-272eb6342f13
+dfboston[dfboston[!, :medv] .== minimum(dfboston[!, :medv]), :]
+
+# ╔═╡ 028c5fdc-e4d4-4f11-bcd6-6a7dedb72c72
+describe(dfboston)
+
+# ╔═╡ d66f2cdd-d3c3-4fdf-92fe-acc71bb87a1a
+md"""
+### Problem (h)
+"""
+
+# ╔═╡ 340ae2dc-c8d4-4a4c-9f05-b1a4ca34902c
+nrow(dfboston[dfboston[!, :rm] .> 7, :])
+
+# ╔═╡ 40fc8cc1-09df-491a-bfe0-dded29f88951
+dfboston[dfboston[!, :rm] .> 8, :]
+
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 StatsPlots = "f3b207a7-027a-5e70-b257-86293d7955fd"
 
 [compat]
@@ -1360,5 +1456,25 @@ version = "0.9.1+5"
 # ╠═e472fd1c-f10a-4315-97d4-9d675a796a00
 # ╠═aa1efd3e-27a3-49c9-9b6c-b03b19513f06
 # ╠═40c9b052-27b6-4be0-b78f-5d7c2492fdb6
+# ╠═17eba98d-b906-42ef-b536-58814860d932
+# ╠═9417a9ef-ea06-40b7-b65e-eacc46be18af
+# ╠═1a7ea974-a2ac-4497-ac9a-701af3569d6e
+# ╠═da8f644c-c6b3-4e33-b4bd-156b070943f8
+# ╠═9743e724-7d16-4e22-82cc-6140d84a9bb3
+# ╠═39988b11-2973-47c4-909b-36b4a86b9b07
+# ╠═5438f74d-0dbb-48dd-ba6d-42e6b968f4ea
+# ╠═bd66b2a7-1613-4d6e-a73d-374492a9f97e
+# ╠═a9e48c79-6c4c-404c-b6bc-226791e6e468
+# ╠═e1a8d28f-df59-44f4-81c4-3ba92c812456
+# ╠═67171bd0-5c2b-4038-b1ea-29800447072f
+# ╠═35e3b511-f4b9-4b04-8a39-40232bce3841
+# ╠═49783152-ad6b-409a-8329-38e4e71599d5
+# ╠═b1e8d25b-6a6f-4ba2-be49-f2b27c443a99
+# ╠═d482828f-53fb-497e-aa74-d254517c8751
+# ╠═4995d7e4-2315-4935-9b07-272eb6342f13
+# ╠═028c5fdc-e4d4-4f11-bcd6-6a7dedb72c72
+# ╠═d66f2cdd-d3c3-4fdf-92fe-acc71bb87a1a
+# ╠═340ae2dc-c8d4-4a4c-9f05-b1a4ca34902c
+# ╠═40fc8cc1-09df-491a-bfe0-dded29f88951
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
