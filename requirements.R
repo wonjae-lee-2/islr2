@@ -1,8 +1,11 @@
 packages <- c(
   "tidyverse",
+  "tidymodels",
   "GGally",
   "patchwork",
-  "ISLR2",
-  "corrr"
+  "corrr",
+  "discrim",
+  "klaR",
+  "kknn"
 )
 install.packages(packages)

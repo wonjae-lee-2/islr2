@@ -1,0 +1,286 @@
+---
+title: "Chapter 4 Lab"
+output: html_document
+date: '2022-04-12'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Chapter 4 Lab
+
+```{r}
+library(tidyverse)
+library(tidymodels)
+library(corrr)
+library(discrim)
+
+datafolder <- "~/github/islr2/data"
+```
+
+```{r}
+tblsmarket_raw <- read_csv(str_c(datafolder, "/Smarket.csv"))
+tblsmarket_raw
+```
+
+```{r}
+names(tblsmarket_raw)
+dim(tblsmarket_raw)
+summary(tblsmarket_raw)
+```
+
+```{r}
+tblsmarket_num <- tblsmarket_raw %>% select(!Direction)
+correlate(tblsmarket_num)
+```
+
+```{r}
+tblsmarket <- tblsmarket_raw %>% mutate(index = 1:nrow(tblsmarket_raw))
+
+ggplot(tblsmarket) +
+  geom_point(aes(x = index, y = Volume))
+```
+
+```{r}
+tblsmarket <- 
+  tblsmarket %>%
+  rename(direction_raw = Direction) %>%
+  mutate(direction = if_else(direction_raw == "Up", 1, 0)) %>%
+  mutate(direction = factor(direction, levels = c(1, 0), labels = c("Up", "Down")))
+tblsmarket
+```
+
+```{r}
+logit_mod <-
+  logistic_reg() %>%
+  set_engine("glm")
+logit_fit1 <-
+  logit_mod %>%
+  fit(direction ~ Lag1 + Lag2 + Lag3 + Lag4 + Lag5 + Volume, data = tblsmarket)
+logit_fit1
+tidy(logit_fit1)
+```
+
+```{r}
+tblsmarket_pred <- tblsmarket %>% select(starts_with("Lag"), Volume)
+```
+
+```{r}
+predict(logit_fit1, tblsmarket, type = "prob")
+```
+
+```{r}
+augment(logit_fit1, tblsmarket)
+```
+
+```{r}
+cmat1 <- augment(logit_fit1, tblsmarket) %>% conf_mat(direction, .pred_class)
+cmat1
+summary(cmat1)
+```
+
+```{r}
+augment(logit_fit1, tblsmarket) %>% summarize(mean(direction == .pred_class))
+```
+
+```{r}
+train_data <- tblsmarket %>% filter(Year < 2005)
+train_data
+test_data <- tblsmarket %>% filter(Year == 2005)
+test_data
+```
+
+```{r}
+logit_fit2 <-
+  logit_mod %>%
+  fit(direction ~ Lag1 + Lag2 + Lag3 + Lag4 + Lag5 + Volume, data = train_data)
+augment(logit_fit2, test_data) %>% metrics(direction, .pred_class)
+cmat2 <- augment(logit_fit2, test_data) %>% conf_mat(direction, .pred_class)
+cmat2
+summary(cmat2)
+```
+
+```{r}
+logit_fit3 <-
+  logit_mod %>%
+  fit(direction ~ Lag1 + Lag2, train_data)
+augment(logit_fit3, test_data) %>% metrics(direction, .pred_class)
+cmat3 <- augment(logit_fit3, test_data) %>% conf_mat(direction, .pred_class)
+cmat3
+summary(cmat3)
+```
+
+```{r}
+predict(logit_fit3, tibble(Lag1 = c(1.2, 1.5), Lag2 = c(1.1, -0.8)), type = "prob")
+```
+
+```{r}
+lda_mod <-
+  discrim_linear() %>%
+  set_engine("MASS")
+lda_fit <-
+  lda_mod %>%
+  fit(direction ~ Lag1 + Lag2, train_data)
+lda_fit
+```
+
+```{r}
+augment(lda_fit, test_data)
+augment(lda_fit, test_data) %>% conf_mat(direction, .pred_class)
+augment(lda_fit, test_data) %>% metrics(direction, .pred_class, .pred_Up)
+augment(lda_fit, test_data) %>% transmute(.pred_new = if_else(.pred_Down > 0.9, 1, 0)) %>% summarize(sum(.pred_new))
+```
+
+```{r}
+qda_mod <-
+  discrim_quad() %>%
+  set_engine("MASS")
+qda_fit <-
+  qda_mod %>%
+  fit(direction ~ Lag1 + Lag2, train_data)
+qda_fit
+```
+
+```{r}
+augment(qda_fit, test_data)
+augment(qda_fit, test_data) %>% conf_mat(direction, .pred_class)
+augment(qda_fit, test_data) %>% conf_mat(direction, .pred_class) %>% summary()
+augment(qda_fit, test_data) %>% metrics(direction, .pred_class, .pred_Up)
+```
+
+```{r}
+bayes_mod <-
+  naive_Bayes() %>%
+  set_engine("klaR", usekernel = FALSE)
+bayes_fit <-
+  bayes_mod %>%
+  fit(direction ~ Lag1 + Lag2, train_data)
+bayes_fit
+```
+
+```{r}
+augment(bayes_fit, test_data)
+augment(bayes_fit, test_data) %>% conf_mat(direction, .pred_class)
+augment(bayes_fit, test_data) %>% conf_mat(direction, .pred_class) %>% summary()
+augment(bayes_fit, test_data) %>% metrics(direction, .pred_class, .pred_Up)
+```
+
+```{r}
+knn_mod <-
+  nearest_neighbor(mode = "classification", neighbors = 1) %>%
+  set_engine("kknn")
+knn_fit <-
+  knn_mod %>%
+  fit(direction ~ Lag1 + Lag2, train_data)
+knn_fit
+```
+
+```{r}
+knn_pred <- augment(knn_fit, test_data)
+knn_pred
+knn_pred %>% conf_mat(direction, .pred_class)
+knn_pred %>% conf_mat(direction, .pred_class) %>% summary()
+knn_pred %>% metrics(direction, .pred_class, .pred_Up)
+```
+
+```{r}
+knn_mod <- 
+  knn_mod %>%
+  set_args(neighbors = 3)
+knn_fit <-
+  knn_mod %>%
+  fit(direction ~ Lag1 + Lag2, train_data)
+knn_fit
+```
+
+```{r}
+augment(knn_fit, test_data)
+augment(knn_fit, test_data) %>% conf_mat(direction, .pred_class)
+augment(knn_fit, test_data) %>% conf_mat(direction, .pred_class) %>% summary()
+augment(knn_fit, test_data) %>% metrics(direction, .pred_class, .pred_Up)
+```
+
+```{r}
+tblcaravan_raw <- read_csv(paste(datafolder, "/Caravan.csv", sep = ""))
+tblcaravan <-
+  tblcaravan_raw %>%
+  mutate(purchase = if_else(Purchase == "Yes", 1, 0)) %>%
+  mutate(purchase = factor(purchase, levels = c(1, 0), labels = c("Yes", "No"))) %>%
+  select(!Purchase)
+```
+
+```{r}
+set.seed(123)
+split <- initial_split(tblcaravan)
+train_data <- training(split)
+test_data <- testing(split)
+
+knn_mod <-
+  nearest_neighbor(mode = "classification", neighbors = 1) %>%
+  set_engine("kknn")
+caravan_rec <-
+  recipe(purchase ~ ., data = train_data) %>%
+  step_normalize(all_predictors())
+caravan_wflow <-
+  workflow() %>%
+  add_model(knn_mod) %>%
+  add_recipe(caravan_rec)
+caravan_fit <-
+  caravan_wflow %>%
+  fit(data = train_data)
+caravan_fit
+```
+
+```{r}
+augment(caravan_fit, test_data)
+augment(caravan_fit, test_data) %>% conf_mat(purchase, .pred_class)
+augment(caravan_fit, test_data) %>% conf_mat(purchase, .pred_class) %>% summary()
+augment(caravan_fit, test_data) %>% metrics(purchase, .pred_class, .pred_Yes)
+```
+
+```{r}
+knn_mod <- knn_mod %>% set_args(neighbors = 10)
+caravan_wflow <-
+  workflow() %>%
+  add_model(knn_mod) %>%
+  add_recipe(caravan_rec)
+caravan_fit <-
+  caravan_wflow %>%
+  fit(data = train_data)
+caravan_fit
+```
+
+```{r}
+augment(caravan_fit, test_data)
+augment(caravan_fit, test_data) %>% conf_mat(purchase, .pred_class)
+augment(caravan_fit, test_data) %>% conf_mat(purchase, .pred_class) %>% summary()
+augment(caravan_fit, test_data) %>% metrics(purchase, .pred_class, .pred_Yes)
+```
+
+```{r}
+logit_mod <-
+  logistic_reg() %>%
+  set_engine("glm")
+logit_fit <-
+  logit_mod %>%
+  fit(purchase ~ ., data = train_data)
+logit_fit
+```
+
+```{r}
+augment(logit_fit, test_data) %>% conf_mat(purchase, .pred_class)
+augment(logit_fit, test_data) %>% conf_mat(purchase, .pred_class) %>% summary()
+augment(logit_fit, test_data) %>% metrics(purchase, .pred_class, .pred_Yes)
+```
+
+```{r}
+augment(logit_fit, test_data) %>%
+  mutate(.pred_class_25 = if_else(.pred_Yes > 0.25, 1, 0)) %>%
+  mutate(.pred_class_25 = factor(.pred_class_25, levels = c(1, 0), labels = c("Yes", "No"))) %>%
+  conf_mat(purchase, .pred_class_25)
+```
+
+
+
+
