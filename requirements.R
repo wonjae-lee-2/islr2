@@ -1,11 +1,4 @@
 packages <- c(
-  "tidyverse",
-  "tidymodels",
-  "GGally",
-  "patchwork",
-  "corrr",
-  "discrim",
-  "klaR",
-  "kknn"
+  "poissonreg"
 )
 install.packages(packages)
