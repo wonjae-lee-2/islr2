@@ -1,0 +1,180 @@
+---
+title: "Chapter 6 Lab"
+output: html_document
+date: '2022-05-24'
+---
+
+```{r}
+library(tidyverse)
+library(tidymodels)
+library(glmnet)
+library(leaps)
+library(patchwork)
+```
+
+```{r}
+datafolder <- "~/github/islr2/data/"
+tblhitters_raw <- read_csv(str_c(datafolder, "Hitters.csv"))
+```
+
+```{r}
+summary(tblhitters_raw)
+```
+
+```{r}
+tblhitters <- tblhitters_raw %>% filter(!is.na(Salary))
+tblhitters
+```
+
+```{r}
+tblhitters_rhs <- tblhitters %>% select(!Salary)
+tblhitters_rhs
+```
+
+```{r}
+subsets <- function(i) {
+  combination <- combn(names(tblhitters_rhs), i, simplify = FALSE)
+  formula <- map_chr(combination, ~ str_c("Salary", str_c(., collapse = " + "), sep = " ~ "))
+  summaries <- 
+    map_dfr(formula, ~ glance(lm(as.formula(.), data = tblhitters))) %>%
+    select(r.squared, adj.r.squared, AIC, BIC)
+  return(
+    tibble(vars = i, formula = formula) %>%
+    bind_cols(summaries)
+  )
+}
+```
+
+
+```{r}
+t1 <- Sys.time()
+vars <- 3
+tblsubset <- map(1:vars, subsets) %>% bind_rows()
+tblsubset %>% group_by(vars) %>% slice_max(r.squared, n = 1)
+t2 <- Sys.time()
+difftime(t2, t1)
+```
+
+```{r}
+subsets_full_mod <- regsubsets(Salary ~ ., data = tblhitters, nvmax = 19)
+subsets_full_res <- summary(subsets_full_mod)
+subsets_full_res
+```
+```{r}
+tblplot <- tibble(
+  vars = 1:19,
+  rss = subsets_full_res$rss,
+  adjr2 = subsets_full_res$adjr2,
+  cp = subsets_full_res$cp,
+  bic = subsets_full_res$bic
+)
+tblplot
+```
+
+```{r}
+p1 <- ggplot(mapping = aes(x = vars, y = rss)) +
+  geom_line(data = tblplot) +
+  geom_point(data = tblplot %>% slice_min(rss)) +
+  labs(x = "Number of Variables", y = "RSS")
+p2 <- ggplot(mapping = aes(x = vars, y = adjr2)) +
+  geom_line(data = tblplot) +
+  geom_point(data = tblplot %>% slice_max(adjr2)) +
+  labs(x = "Number of Variables", y = "Adjusted R2")
+p3 <- ggplot(mapping = aes(x = vars, y = cp)) +
+  geom_line(data = tblplot) +
+  geom_point(data = tblplot %>% slice_min(cp)) +
+  labs(x = "Number of Variables", y = "Cp")
+p4 <- ggplot(mapping = aes(x = vars, y = bic)) +
+  geom_line(data = tblplot) +
+  geom_point(data = tblplot %>% slice_min(bic)) +
+  labs(x = "Number of Variables", y = "BIC")
+(p1 + p2) / (p3 + p4)
+```
+
+```{r}
+plot(subsets_full_mod, scale = "r2")
+plot(subsets_full_mod, scale = "adjr2")
+plot(subsets_full_mod, scale = "Cp")
+plot(subsets_full_mod, scale = "bic")
+```
+
+```{r}
+coef(subsets_full_mod, 6)
+```
+
+```{r}
+subsets_forward_mod <- regsubsets(Salary ~ ., tblhitters, method = "forward", nvmax = 19)
+subsets_backward_mod <- regsubsets(Salary ~ ., tblhitters, method = "backward", nvmax = 19)
+coef(subsets_full_mod, 7)
+coef(subsets_forward_mod, 7)
+coef(subsets_backward_mod, 7)
+```
+
+```{r}
+hitters_splits <- initial_split(tblhitters, prop = 3/4)
+hitters_train <- training(hitters_splits)
+hitters_test <- testing(hitters_splits)
+```
+
+```{r}
+salary_mod <-
+  linear_reg(penalty = tune(), mixture = tune()) %>%
+  set_engine("glmnet")
+salary_rec <-
+  recipe(Salary ~ ., data = tblhitters) %>%
+  step_normalize(all_numeric_predictors()) %>%
+  step_dummy(all_nominal_predictors())
+salary_wf <-
+  workflow() %>%
+  add_model(salary_mod) %>%
+  add_recipe(salary_rec)
+```
+
+```{r}
+train_cv_splits <- vfold_cv(hitters_train, v = 10)
+penalty_grid <- grid_regular(
+  penalty(range = c(-2, 2)),
+  mixture(c(0, 1)),
+  levels = c(penalty = 9, mixture = 2))
+salary_res <-
+  salary_wf %>%
+  tune_grid(
+    resamples = train_cv_splits,
+    grid = penalty_grid,
+    metrics = metric_set(rsq)
+  )
+```
+
+```{r}
+salary_res %>% collect_metrics()
+```
+
+```{r}
+penalty_best <- salary_res %>% select_best("rsq")
+salary_wf_final <-
+  salary_wf %>%
+  finalize_workflow(penalty_best)
+salary_wf_final
+```
+
+```{r}
+salary_res_final <-
+  salary_wf_final %>%
+  last_fit(hitters_splits, metrics = metric_set(rsq))
+salary_res_final
+```
+
+```{r}
+salary_res_final %>% collect_metrics()
+```
+
+```{r}
+salary_res_final %>% extract_fit_engine() %>% tidy()
+```
+
+
+
+
+
+
+
